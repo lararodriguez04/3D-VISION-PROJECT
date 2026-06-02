@@ -34,9 +34,6 @@ CACHE_FILE  = 'landmark_cache.pkl'
 CHECKPOINT  = 'pose_scorer.pt'
 HISTORY_OUT = 'training_history.json'
 
-_mp_pose = mp.solutions.pose
-
-
 # ──────────────────────────────────────── normalisation
 
 def normalize_pose(raw: np.ndarray, rotate: bool = True) -> np.ndarray:
@@ -113,6 +110,7 @@ def build_landmark_cache(image_paths: list[str]) -> dict[str, np.ndarray | None]
 
     print(f"Extracting landmarks for {len(missing)} images  "
           f"({len(existing)} already cached)…")
+    _mp_pose = mp.solutions.pose   #imported here to avoid crash when only normalize_pose is imported
     pose = _mp_pose.Pose(static_image_mode=True, model_complexity=2,
                          enable_segmentation=False, min_detection_confidence=0.5)
     for path in tqdm(missing, unit='img'):

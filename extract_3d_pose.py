@@ -56,4 +56,4 @@ def extract_and_plot_3d_pose(image_path):
     else:
         print("No pose detected in the image. Try another yoga pose.")
 
-extract_and_plot_3d_pose('/home/mustapha/.cache/kagglehub/datasets/shrutisaxena/yoga-pose-image-classification-dataset/versions/1/dataset/padangusthasana/19-0.png')
+extract_and_plot_3d_pose('/home/mustapha/.cache/kagglehub/datasets/shrutisaxena/yoga-pose-image-classification-dataset/versions/1/dataset/urdhva mukha svanasana/17-0.png')

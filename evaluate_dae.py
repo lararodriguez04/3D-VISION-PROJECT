@@ -139,14 +139,9 @@ def evaluate(args: argparse.Namespace) -> None:
     basename_map = {os.path.basename(k): v for k, v in cache.items()}
 
     def get_lm(path: str):
-        # 1. Intentamos buscar la ruta absoluta en el cache
-        res = cache.get(path)
-        
-        # 2. Si se encuentra (y no es None), evitamos evaluar el array y lo devolvemos directamente
-        if res is not None:
-            return res
-            
-        # 3. Si no existía, recurrimos de forma segura al mapa por nombre de archivo base
+        v = cache.get(path)
+        if v is not None:
+            return v
         return basename_map.get(os.path.basename(path))
 
     #load preference pairs
@@ -385,7 +380,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument('--scorer', default='pose_scorer.pt')
     p.add_argument('--dae',    default='dae.pt')
     p.add_argument('--cache',  default='landmark_cache.pkl')
-    p.add_argument('--prefs',  default='preferences_merged.jsonl',
+    p.add_argument('--prefs',  default='preferences.jsonl',
                    help='Use preferences_merged.jsonl for the full dataset, '
                         'or preferences.jsonl for the original split only')
     return p.parse_args()

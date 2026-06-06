@@ -158,7 +158,8 @@ class PoseScorer(nn.Module):
     """MLP that maps a normalised pose vector (132,) → scalar quality score."""
 
     def __init__(self, input_dim: int = 132,
-                 hidden: list[int] | None = None) -> None:
+                 hidden: list[int] | None = None,
+                 dropout: float = 0.1) -> None:
         super().__init__()
         if hidden is None:
             hidden = [256, 128, 64]
@@ -166,7 +167,7 @@ class PoseScorer(nn.Module):
         prev = input_dim
         for h in hidden:
             layers += [nn.Linear(prev, h), nn.LayerNorm(h),
-                       nn.GELU(), nn.Dropout(0.1)]
+                       nn.GELU(), nn.Dropout(dropout)]
             prev = h
         layers.append(nn.Linear(prev, 1))
         self.net = nn.Sequential(*layers)
@@ -247,12 +248,14 @@ def train(args: argparse.Namespace) -> list[dict]:
     print(f"Dataset  : {n_total} valid pairs  →  train {n_train}  /  val {n_val}")
 
     # ── model ─────────────────────────────────────────────────────────
-    model = PoseScorer(input_dim=132, hidden=[256, 128, 64]).to(device)
+    model = PoseScorer(input_dim=132, hidden=args.hidden,
+                       dropout=args.dropout).to(device)
     n_params = sum(p.numel() for p in model.parameters())
-    print(f"Model    : {n_params:,} parameters\n")
+    print(f"Model    : {n_params:,} parameters  "
+          f"hidden={args.hidden}  dropout={args.dropout}  wd={args.weight_decay}\n")
 
     optimizer = torch.optim.AdamW(model.parameters(),
-                                   lr=args.lr, weight_decay=1e-4)
+                                   lr=args.lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=args.epochs, eta_min=args.lr * 0.01)
 
@@ -298,11 +301,12 @@ def train(args: argparse.Namespace) -> list[dict]:
                 'val_acc':     val_acc,
                 'epoch':       epoch,
                 'rotate':      rotate,
-                'hidden':      [256, 128, 64],
+                'hidden':      args.hidden,
+                'dropout':     args.dropout,
                 'input_dim':   132,
-            }, CHECKPOINT)
+            }, args.checkpoint)
 
-    print(f"\nBest val accuracy : {best_val_acc:.1%}  →  {CHECKPOINT}")
+    print(f"\nBest val accuracy : {best_val_acc:.1%}  →  {args.checkpoint}")
 
     with open(HISTORY_OUT, 'w') as f:
         json.dump(history, f, indent=2)
@@ -316,12 +320,20 @@ def train(args: argparse.Namespace) -> list[dict]:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="Bradley-Terry pose quality training")
-    p.add_argument('--prefs',      default='preferences.jsonl',
+    p.add_argument('--prefs',        default='preferences.jsonl',
                    help='Preference labels file')
-    p.add_argument('--epochs',     type=int,   default=60)
-    p.add_argument('--batch-size', type=int,   default=64)
-    p.add_argument('--lr',         type=float, default=3e-4)
-    p.add_argument('--no-rotate',  action='store_true',
+    p.add_argument('--checkpoint',   default=CHECKPOINT,
+                   help='Output checkpoint path (default: pose_scorer.pt)')
+    p.add_argument('--epochs',       type=int,   default=60)
+    p.add_argument('--batch-size',   type=int,   default=64)
+    p.add_argument('--lr',           type=float, default=3e-4)
+    p.add_argument('--dropout',      type=float, default=0.1,
+                   help='Dropout rate in each MLP block (default: 0.1)')
+    p.add_argument('--weight-decay', type=float, default=1e-4,
+                   help='AdamW weight decay (default: 1e-4)')
+    p.add_argument('--hidden',       type=int,   nargs='+', default=[256, 128, 64],
+                   help='Hidden layer sizes (default: 256 128 64)')
+    p.add_argument('--no-rotate',    action='store_true',
                    help='Skip rotation normalisation')
     return p.parse_args()
 

@@ -1,3 +1,4 @@
+import argparse
 import tkinter as tk
 from tkinter import ttk, messagebox
 import cv2
@@ -13,10 +14,30 @@ import threading
 from collections import OrderedDict
 
 DATASET_DIR = '/home/mustapha/.cache/kagglehub/datasets/shrutisaxena/yoga-pose-image-classification-dataset/versions/1/dataset/'
-OUTPUT_FILE = 'preferences.jsonl'
-TARGET_COMPARISONS = 5000
 DISPLAY_W, DISPLAY_H = 400, 300  # per-panel dimensions
 CACHE_LIMIT = 400
+
+# Labeling modes — each maps to a different output file, question, and hint
+MODES: dict[str, dict] = {
+    'visual': {
+        'output':   'preferences.jsonl',
+        'target':   5000,
+        'question': 'Which pose looks visually better?',
+        'hint':     'Overall impression — body shape, balance, clarity of form',
+    },
+    'missing': {
+        'output':   'missing_joints.jsonl',
+        'target':   2000,
+        'question': 'Which pose has more complete, visible joints?',
+        'hint':     'Prefer the pose where more body parts are clearly detected',
+    },
+    'quality': {
+        'output':   'pose_quality.jsonl',
+        'target':   5000,
+        'question': 'Which pose shows better joint alignment?',
+        'hint':     'Knee over ankle · spine neutral · full limb extension',
+    },
+}
 
 # ──────────────────────────────────────── SMPL-style body renderer
 
@@ -223,9 +244,12 @@ class LRUCache:
 
 
 class PoseLabelingApp:
-    def __init__(self, root):
+    def __init__(self, root, mode_cfg: dict):
         self.root = root
-        self.root.title("Yoga Pose Quality — Preference Labeler")
+        self.mode_cfg = mode_cfg
+        self.output_file = mode_cfg['output']
+        self.target = mode_cfg['target']
+        self.root.title(f"Yoga Pose Labeler — {mode_cfg['output']}")
         self.root.configure(bg='#1e1e2e')
         self.root.resizable(False, False)
 
@@ -267,8 +291,8 @@ class PoseLabelingApp:
         return dataset
 
     def _load_progress(self):
-        if os.path.exists(OUTPUT_FILE):
-            with open(OUTPUT_FILE, 'r') as f:
+        if os.path.exists(self.output_file):
+            with open(self.output_file, 'r') as f:
                 self.completed = sum(1 for line in f if line.strip())
 
     def _generate_pairs(self, n=200):
@@ -329,7 +353,7 @@ class PoseLabelingApp:
         hdr = tk.Frame(self.root, bg='#1e1e2e')
         hdr.pack(fill='x', padx=20, pady=(12, 4))
 
-        tk.Label(hdr, text="Which pose is visually better?",
+        tk.Label(hdr, text=self.mode_cfg['question'],
                  font=('Helvetica', 18, 'bold'),
                  bg='#1e1e2e', fg='#cdd6f4').pack(side='left')
 
@@ -344,14 +368,18 @@ class PoseLabelingApp:
 
         self.progress_var = tk.DoubleVar(value=self.completed)
         bar = ttk.Progressbar(prog_frame, variable=self.progress_var,
-                               maximum=TARGET_COMPARISONS)
+                               maximum=self.target)
         bar.pack(side='left', fill='x', expand=True)
 
         self.progress_label = tk.Label(prog_frame,
-                                       text=f"{self.completed}/{TARGET_COMPARISONS}",
+                                       text=f"{self.completed}/{self.target}",
                                        font=('Helvetica', 11),
                                        bg='#1e1e2e', fg='#a6e3a1', width=12)
         self.progress_label.pack(side='right')
+
+        tk.Label(self.root, text=self.mode_cfg['hint'],
+                 font=('Helvetica', 10, 'italic'),
+                 bg='#1e1e2e', fg='#6c7086').pack(pady=(0, 4))
 
         # ---- comparison panels ----
         panels_frame = tk.Frame(self.root, bg='#1e1e2e')
@@ -471,7 +499,7 @@ class PoseLabelingApp:
     # ------------------------------------------------------------------ flow
 
     def _load_next_pair(self):
-        if self.completed >= TARGET_COMPARISONS:
+        if self.completed >= self.target:
             messagebox.showinfo("Complete!",
                                 f"You've finished {self.completed} comparisons.\nGreat work!")
             self.root.quit()
@@ -528,7 +556,7 @@ class PoseLabelingApp:
             "class":  cls,
             "timestamp": datetime.now().isoformat()
         }
-        with open(OUTPUT_FILE, 'a') as f:
+        with open(self.output_file, 'a') as f:
             f.write(json.dumps(record) + '\n')
 
         self.completed += 1
@@ -544,7 +572,7 @@ class PoseLabelingApp:
 
     def _update_progress(self):
         self.progress_var.set(self.completed)
-        self.progress_label.config(text=f"{self.completed}/{TARGET_COMPARISONS}")
+        self.progress_label.config(text=f"{self.completed}/{self.target}")
 
     def _disable_buttons(self):
         for w in (self.btn_a, self.btn_b, self.btn_skip):
@@ -560,9 +588,25 @@ class PoseLabelingApp:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Yoga pose preference labeler")
+    parser.add_argument(
+        '--mode', choices=list(MODES.keys()), default='visual',
+        help=(
+            'visual  → preferences.jsonl   (overall visual quality)\n'
+            'missing → missing_joints.jsonl (joint completeness)\n'
+            'quality → pose_quality.jsonl   (geometric joint alignment)'
+        )
+    )
+    args = parser.parse_args()
+    mode_cfg = MODES[args.mode]
+    print(f"Mode    : {args.mode}")
+    print(f"Output  : {mode_cfg['output']}")
+    print(f"Target  : {mode_cfg['target']}")
+    print(f"Hint    : {mode_cfg['hint']}")
+
     root = tk.Tk()
-    root.geometry("950x850")
-    app = PoseLabelingApp(root)
+    root.geometry("950x870")
+    app = PoseLabelingApp(root, mode_cfg)
     root.mainloop()
 
 

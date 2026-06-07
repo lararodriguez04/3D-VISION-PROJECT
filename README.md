@@ -4,7 +4,7 @@ A machine-learning system that learns to score yoga pose quality from **your own
 
 ---
 
-## How it works (overview for newcomers)
+## How it works
 
 ### The core idea: learning from comparisons
 

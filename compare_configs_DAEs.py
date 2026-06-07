@@ -251,7 +251,7 @@ def main(args: argparse.Namespace) -> None:
     if original_val_acc is not None:
         ax1.axhline(original_val_acc * 100, color=C_BLUE, linestyle=':',
                     linewidth=1.5, zorder=3,
-                    label=f'Mustapha val_acc {original_val_acc:.1%}')
+                    label=f'Preference Models val_acc {original_val_acc:.1%}')
     for rect, v in zip(bars, ae_accs):
         ax1.text(rect.get_x() + rect.get_width() / 2, v + 0.3,
                  f'{v:.1f}%', ha='center', va='bottom',

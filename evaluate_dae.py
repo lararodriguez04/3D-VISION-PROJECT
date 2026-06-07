@@ -274,7 +274,7 @@ def evaluate(args: argparse.Namespace) -> None:
         ax.axhline(original_val_acc * 100, color=C_YELLOW,
                    linestyle='--', linewidth=1.5, zorder=3)
         ax.text(1.45, original_val_acc * 100 + 0.5,
-                f'Mustapha val_acc\n{original_val_acc:.1%}',
+                f'Preference model val_acc\n{original_val_acc:.1%}',
                 color=C_YELLOW, fontsize=8, va='bottom')
     ax.set_ylim(0, 110)
     ax.set_ylabel('Accuracy (%)', color=C_TEXT)
@@ -378,7 +378,7 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description='Evaluate DAE impact on Bradley-Terry scorer accuracy')
     p.add_argument('--scorer', default='pose_scorer.pt')
-    p.add_argument('--dae',    default='dae.pt')
+    p.add_argument('--dae',    default='dae_noise001_occ002.pt')
     p.add_argument('--cache',  default='landmark_cache.pkl')
     p.add_argument('--prefs',  default='preferences.jsonl',
                    help='Use preferences_merged.jsonl for the full dataset, '

@@ -2,7 +2,7 @@
 
 A machine-learning system that learns to score yoga pose quality from **your own pairwise preferences**. You label pairs of poses as better or worse, train a [Bradley-Terry](https://en.wikipedia.org/wiki/Bradley%E2%80%93Terry_model) preference model, and get a scalar quality score (0–100%) for any new pose image. An optional Denoising Autoencoder (DAE) cleans up noisy or partially-occluded landmark estimates before scoring, improving robustness.
 
-![My image](./Fig:1.png)
+![My image](Fig_1.png)
 ---
 
 ## How it works

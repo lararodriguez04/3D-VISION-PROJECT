@@ -77,6 +77,11 @@ pip install -r requirements.txt
 
 ---
 
+For orientation files proceed to create a different enviroment and use this dependencies (the mediapipe version require differs from the rest):
+
+```bash
+pip install -r yoga_pose_env.txt
+```
 ## Dataset
 
 All scripts expect the [Yoga Pose Image Classification Dataset](https://www.kaggle.com/datasets/shrutisaxena/yoga-pose-image-classification-dataset) from Kaggle. Download it with:
